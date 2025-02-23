@@ -48,6 +48,31 @@ def signin() :
     return response_body
 
 
+@api.route("/private/<string:profile>", methods=["GET"])
+def profile_user(profile):
+    response_body = {}
+    user = db.session.execute(db.select(User).filter(User.username.ilike(profile))).scalar() 
+    if user:
+        response_body['message'] = "Usuario encontrado"
+        response_body['results'] = user.serialize()
+        return response_body, 200
+    else:
+        response_body['message'] = "User no encontrado"
+        response_body['results'] = {}
+    return response_body, 404
+
+
+
+@api.route("/private/check", methods=["GET"])
+@jwt_required()
+def profile_check():
+    response_body = {}
+    current_user = get_jwt_identity()
+    response_body['message'] = f'El usuario es: {current_user[0]}'
+    response_body['results'] = current_user[0]
+    return response_body, 200    
+
+
 
 @api.route('/hello', methods=['POST', 'GET'])
 def handle_hello():
