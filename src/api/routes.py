@@ -8,6 +8,8 @@ from flask_cors import CORS
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_bcrypt import Bcrypt
 
 
 
@@ -20,32 +22,33 @@ CORS(api)
 
 @api.route("/signup", methods = ["POST"])
 def signup() :
-    response_body = {}
-    data = request.json
-    user = User(email = data['email'].lower(),
-                password = data['password'],
-                is_active = True)
-    db.session.add(user)
-    db.session.commit()
-    response_body['message'] = "Usuario creado exitosamente!"
-    return response_body,200
+    ata = request.get_json()
 
+    if User.query.filter_by(email=data['email']).first():
+        return jsonify({"message": "El correo electrónico ya está en uso"}), 400
+    
+    hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
+    new_user = User(
+        name=data['name'],
+        email=data['email'],
+        password=hashed_password
+        )
+    
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({"message": "Usuario creado exitosamente"}), 201
 
 @api.route("/login", methods = ["POST"])
-def signin() :
-    response_body = {}
-    email = reques.json.get("email",None)
-    password = reques.json.get("password",None)
-    user = db.session.execute(db.select(User).where(User.email == email)).scalar()
-    if user and password == user.password:
-        access_token = create_access_token(identity=[user.username, user.email, user.avatar_url])
-        response_body['access_token'] = access_token
-        response_body['message'] = "Login exitoso!"
-        response_body['results'] = user.serialize()
-        return response_body, 200
+def login() :
+    rdata = request.get_json()
+    user = User.query.filter_by(email=data['email']).first()
+    if user and bcrypt.check_password_hash(user.password, data['password']):
+        access_token = create_access_token(identity=str(user.id))
+        print(access_token)
+        return jsonify({"message": "Inicio de sesión exitoso","access_token": access_token, "user": user.serialize()}), 200
     else:
-        response_body['message'] = "Error, pasword o email incorrectos"
-    return response_body
+        return jsonify({"message": "Error , Email o contraseña incorrectos"}), 401
 
 
 @api.route("/private/<string:profile>", methods=["GET"])
@@ -62,15 +65,24 @@ def profile_user(profile):
     return response_body, 404
 
 
+@api.route('/user/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    user = User.query.get(user_id)
 
-@api.route("/private/check", methods=["GET"])
-@jwt_required()
-def profile_check():
-    response_body = {}
-    current_user = get_jwt_identity()
-    response_body['message'] = f'El usuario es: {current_user[0]}'
-    response_body['results'] = current_user[0]
-    return response_body, 200    
+    if not user:
+        return jsonify({"message": "Usuario no encontrado"}), 404
+    
+    db.session.delete(user)
+    db.session.commit()
+
+# @api.route("/private/check", methods=["GET"])
+# @jwt_required()
+# def profile_check():
+#     response_body = {}
+#     current_user = get_jwt_identity()
+#     response_body['message'] = f'El usuario es: {current_user[0]}'
+#     response_body['results'] = current_user[0]
+#     return response_body, 200    
 
 
 

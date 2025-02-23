@@ -17,7 +17,7 @@ export const Signin = ({ show = false }) => {
     const handleSubmit = async (event) => {
         event.preventDefault();
         actions.signin(formData)
-        actions.showModalSignin(false)
+        actions.showModalLogin(false)
     }
 
     const handleCancel = () => {
@@ -25,7 +25,7 @@ export const Signin = ({ show = false }) => {
     }
 
     return (
-        <Modal show={store.showModalSignin}>
+        <Modal show={store.showModalLogin}>
             <Form onSubmit={handleSubmit} className="m-3">
                 <Form.Group className="my-3" controlId="formBasicEmail">
                     <Form.Label>Email address *</Form.Label>

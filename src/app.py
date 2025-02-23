@@ -10,6 +10,10 @@ from api.models import db
 from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
+from werkzeug.security import generate_password_hash
+from werkzeug.exceptions import Unauthorized
+from flask_cors import CORS
+
 from flask_jwt_extended import JWTManager
 
 # from models import Person
@@ -32,6 +36,14 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 MIGRATE = Migrate(app, db, compare_type=True)
 db.init_app(app)
 
+app.config.update(
+    MAIL_SERVER='smtp.gmail.com',
+    MAIL_PORT=587,
+    MAIL_USE_TLS=True,
+    MAIL_USERNAME='shaerkbladex@gmail.com',
+    MAIL_PASSWORD='rsgf dwgh clck icvc'
+)
+
 # add the admin
 setup_admin(app)
 
@@ -41,7 +53,9 @@ setup_commands(app)
 # Add all endpoints form the API with a "api" prefix
 app.register_blueprint(api, url_prefix='/api')
 
-app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SEED")
+app.config["JWT_SECRET_KEY"] = "695300857"
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+
 jwt = JWTManager(app)
 
 # Handle/serialize errors like a JSON object
