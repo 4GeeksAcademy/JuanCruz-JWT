@@ -10,11 +10,15 @@ from api.models import db
 from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
+
+from flask_jwt_extended import JWTManager
+from datetime import timedelta
+from flask_mail import Mail, Message
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity, decode_token
+import base64  
 from werkzeug.security import generate_password_hash
 from werkzeug.exceptions import Unauthorized
 from flask_cors import CORS
-
-from flask_jwt_extended import JWTManager
 
 # from models import Person
 
@@ -22,7 +26,23 @@ ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
 static_file_dir = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), '../public/')
 app = Flask(__name__)
+CORS(app) 
+
+# flask-mail config 
+app.config.update(
+    MAIL_SERVER='smtp.gmail.com',
+    MAIL_PORT=587,
+    MAIL_USE_TLS=True,
+    MAIL_USERNAME='shaerkbladex@gmail.com',
+    MAIL_PASSWORD='rsgf dwgh clck icvc'
+)
+
+mail = Mail(app)
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+jwt = JWTManager(app)
+
 app.url_map.strict_slashes = False
+
 
 # database condiguration
 db_url = os.getenv("DATABASE_URL")
@@ -36,27 +56,21 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 MIGRATE = Migrate(app, db, compare_type=True)
 db.init_app(app)
 
-app.config.update(
-    MAIL_SERVER='smtp.gmail.com',
-    MAIL_PORT=587,
-    MAIL_USE_TLS=True,
-    MAIL_USERNAME='shaerkbladex@gmail.com',
-    MAIL_PASSWORD='rsgf dwgh clck icvc'
-)
-
 # add the admin
 setup_admin(app)
 
 # add the admin
 setup_commands(app)
 
+#-------------------------------------TOKEN----------------------------------------------------
+flask = JWTManager(app)
+
 # Add all endpoints form the API with a "api" prefix
 app.register_blueprint(api, url_prefix='/api')
 
-app.config["JWT_SECRET_KEY"] = "695300857"
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
-
-jwt = JWTManager(app)
+# app.register_blueprint(api.route, url_prefix='/user')
+app.config["SECRET_KEY"] = "clave secreta"
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=2)
 
 # Handle/serialize errors like a JSON object
 
@@ -73,6 +87,7 @@ def sitemap():
     if ENV == "development":
         return generate_sitemap(app)
     return send_from_directory(static_file_dir, 'index.html')
+    
 
 # any other endpoint will try to serve it like a static file
 @app.route('/<path:path>', methods=['GET'])
